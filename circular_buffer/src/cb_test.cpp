@@ -1,6 +1,12 @@
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
+
 #include <iostream>
 
-int main()
+#include "circular_buffer.h"
+
+TEST_CASE("Constructor test" "[circular_buffer]")
 {
-    std::cout << "Hello World!" << std::endl;
+	circular_buffer<int> cb(20);
+	REQUIRE(cb.capacity() == 20);
 }
