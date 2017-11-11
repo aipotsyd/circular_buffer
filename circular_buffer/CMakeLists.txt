@@ -1,5 +1,5 @@
 if(MSVC)
-    add_compile_options("/W4"  "/std:c++17" "$<$<CONFIG:RELEASE>:/O2>")
+    add_compile_options("/W4"  "/std:c++17" "$<$<CONFIG:RELEASE>:/O2>" "/diagnostics:caret")
 else()
     add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
