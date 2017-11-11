@@ -6,32 +6,51 @@
 #include "circular_buffer.h"
 
 struct leak_checker {
-	static size_t count;
+	leak_checker(int value) : m_value{ value }
+	{
+		++count;
+	}
+	static std::size_t count;
 	leak_checker() { ++count; }
 	~leak_checker() { --count; }
-};
-size_t leak_checker::count = 0;
+	leak_checker(const leak_checker& lc) : m_value{ lc.m_value}
+	{
+		++count;
+	}
+	leak_checker(leak_checker&& lc) = default;
+	leak_checker& operator=(const leak_checker&) = default;
+	leak_checker& operator=(leak_checker&&) = default;
 
-TEST_CASE("Constructor test" "[circular_buffer]")
+	int value() { return m_value; }
+private:
+	int m_value;
+};
+std::size_t leak_checker::count = 0;
+
+TEST_CASE("Circular buffer test" "[circular_buffer]")
 {
+	leak_checker::count = 0;
 	SECTION("Construct with capacity") {
-		auto cb = circular_buffer<int>(5);
+		auto cb = circular_buffer<leak_checker>(5);
 		REQUIRE(cb.size() == 0);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(cb.empty());
 		REQUIRE(cb.max_size() > 0);
+		REQUIRE(leak_checker::count == 0);
 
 		cb.push_back(1);
 		REQUIRE(cb.size() == 1);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
-		REQUIRE(cb.front() == 1);
+		REQUIRE(cb.front().value() == 1);
+		REQUIRE(leak_checker::count == 1);
 
 		cb.push_back(2);
 		REQUIRE(cb.size() == 2);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
-		REQUIRE(cb.front() == 1);
+		REQUIRE(cb.front().value() == 1);
+		REQUIRE(leak_checker::count == 2);
 
 		cb.push_back(3);
 		cb.push_back(4);
@@ -39,56 +58,64 @@ TEST_CASE("Constructor test" "[circular_buffer]")
 		REQUIRE(cb.size() == 5);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
-		REQUIRE(cb.front() == 1);
+		REQUIRE(cb.front().value() == 1);
+		REQUIRE(leak_checker::count == 5);
 
 		cb.push_back(6);
 		REQUIRE(cb.size() == 5);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
-		REQUIRE(cb.front() == 2);
+		REQUIRE(cb.front().value() == 2);
+		REQUIRE(leak_checker::count == 5);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 4);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
-		REQUIRE(cb.front() == 3);
+		REQUIRE(cb.front().value() == 3);
+		REQUIRE(leak_checker::count == 4);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 3);
-		REQUIRE(cb.front() == 4);
+		REQUIRE(cb.front().value() == 4);
+		REQUIRE(leak_checker::count == 3);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 2);
-		REQUIRE(cb.front() == 5);
+		REQUIRE(cb.front().value() == 5);
+		REQUIRE(leak_checker::count == 2);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 1);
-		REQUIRE(cb.front() == 6);
+		REQUIRE(cb.front().value() == 6);
+		REQUIRE(leak_checker::count == 1);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 0);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(cb.empty());
+		REQUIRE(leak_checker::count == 0);
 
 		cb.push_back(7);
 		REQUIRE(cb.size() == 1);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
-		REQUIRE(cb.front() == 7);
+		REQUIRE(cb.front().value() == 7);
+		REQUIRE(leak_checker::count == 1);
 
 		cb.push_back(8);
 		cb.push_back(9);
 		REQUIRE(cb.size() == 3);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
-		REQUIRE(cb.front() == 7);
+		REQUIRE(cb.front().value() == 7);
+		REQUIRE(leak_checker::count == 3);
 
 		cb.clear();
 		REQUIRE(cb.size() == 0);
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(cb.empty());
-
-
+		REQUIRE(leak_checker::count == 0);
 	}
 
 	SECTION("Check empty construction does not allocate members") {
