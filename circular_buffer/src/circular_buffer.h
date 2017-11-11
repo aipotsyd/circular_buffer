@@ -14,14 +14,14 @@ public:
 	using value_type = T;
 	using size_type = std::size_t;
 	using difference_type = int;
-	using refernce = value_type&;
+	using reference = value_type&;
 	using const_reference = const value_type&;
 	using class_type = circular_buffer;
 
 	explicit circular_buffer(std::size_t capacity)
 		: m_capacity{ capacity },
 		m_buffer{ std::make_unique<value_type[]>(capacity) },
-		m_front{ m_buffer.get() },
+		m_front{ nullptr },
 		m_back{ m_buffer.get() }
 	{}
 
@@ -33,7 +33,8 @@ public:
 
 	size_type size() const
 	{
-		return (m_back >= m_front ? m_back : m_back + m_capacity) - m_front;
+		return empty() ? 0 :
+			(m_back > m_front ? m_back : m_back + m_capacity) - m_front;
 	}
 
 	size_type max_size() const
@@ -45,10 +46,51 @@ public:
 
 	bool empty() const
 	{
-		return m_front == m_back;
+		return !m_front;
 	}
 
+	bool push_back(const value_type &value)
+	{
+		*m_back = value; 
+
+		value_type* const next = wrap(m_back + 1);
+		if (empty()) {
+			m_front = m_back;
+			m_back = next;
+			return true;
+		}
+		else if (m_front == m_back) {
+			// full, so overwrite
+			m_front = m_back = next;
+			return false;
+		}
+		else {
+			m_back = next;
+			return true;
+		}
+	}
+
+	reference front()
+	{
+		assert(m_front);
+		return *m_front;
+	}
+
+	const_reference front() const
+	{
+		assert(m_front);
+		return *m_front;
+	}
+	
 private:
+	value_type* wrap(value_type* ptr)
+	{
+		assert(ptr < m_buffer.get() + m_capacity * 2);
+		if (ptr >= m_buffer.get() + m_capacity)
+			return ptr - m_capacity;
+		else
+			return ptr;
+	}
 
 	const size_type m_capacity;
 	std::unique_ptr<value_type[]> m_buffer;
