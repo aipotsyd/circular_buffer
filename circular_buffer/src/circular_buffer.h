@@ -4,8 +4,7 @@
 // 
 #include <cstddef>
 #include <limits>
-#include <memory>
-#include <numeric>
+#include <stdexcept>
 
 template <typename T, typename A = std::allocator<T>>
 class circular_buffer
@@ -14,7 +13,7 @@ public:
 	using value_type = T;
 	using allocator_type = A;
 	using self_type = circular_buffer<T, A>;
-	using size_type = std::size_t;
+	using size_type = typename allocator_type::size_type;
 	using difference_type = typename allocator_type::difference_type;
 	using reference = typename allocator_type::reference;
 	using const_reference = typename allocator_type::const_reference;
@@ -37,12 +36,10 @@ public:
 		m_allocator.deallocate(m_buffer, m_capacity);
 	}
 
-	circular_buffer(const class_type&) = delete;
+	circular_buffer(const class_type&) = default;
 	circular_buffer(class_type&&) = default;
-	class_type& operator=(const class_type &) = delete;
+	class_type& operator=(const class_type &) = default;
 	class_type& operator=(class_type &&) = default;
-	size_type capacity() const { return m_capacity; }
-
 	allocator_type get_allocator() const { return m_allocator; }
 
 	size_type size() const
@@ -59,6 +56,32 @@ public:
 	bool empty() const
 	{
 		return !m_front;
+	}
+
+	size_type capacity() const { return m_capacity; }
+
+	reference front()
+	{
+		assert(m_front);
+		return *m_front;
+	}
+
+	const_reference front() const
+	{
+		assert(m_front);
+		return *m_front;
+	}
+
+	reference back()
+	{
+		assert(m_front);
+		return *wrap(m_back - 1);
+	}
+
+	const_reference back() const
+	{
+		assert(m_front);
+		return *wrap(m_back - 1);
 	}
 
 	// This version of push_back will construct and destroy objects in m_buffer
@@ -113,26 +136,41 @@ public:
 		m_front = nullptr;
 	}
 
-	reference front()
+	reference operator[](std::size_t index)
 	{
-		assert(m_front);
-		return *m_front;
+		return *wrap(m_front + index);
 	}
 
-	const_reference front() const
+	const_reference operator[](std::size_t index) const
 	{
-		assert(m_front);
-		return *m_front;
+		return *wrap(m_front + index);
+	}
+
+	reference at(std::size_t index)
+	{
+		if (index >= size())
+			throw std::out_of_range("Index out of range");
+		return (*this)[index];
+	}
+
+	const_reference at(std::size_t index) const
+	{
+		if (index >= size())
+			throw std::out_of_range("Index out of range");
+		return (*this)[index];
 	}
 
 private:
-	value_type* wrap(value_type* ptr)
+	value_type* wrap(value_type* ptr) const
 	{
 		assert(ptr < m_buffer + m_capacity * 2);
 		if (ptr >= m_buffer + m_capacity)
 			return ptr - m_capacity;
-		else
-			return ptr;
+		
+		if (ptr < m_buffer)
+			return ptr + m_capacity;
+		
+		return ptr;
 	}
 	
 	const size_type m_capacity;

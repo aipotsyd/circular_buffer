@@ -17,4 +17,4 @@ add_executable(
 
 target_compile_features(cb_test PUBLIC cxx_std_17)
 
-add_custom_command(TARGET cb_test POST_BUILD COMMAND cb_test)
+add_custom_command(TARGET cb_test POST_BUILD COMMAND cb_test -b -d yes)

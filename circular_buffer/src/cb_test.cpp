@@ -27,7 +27,7 @@ private:
 };
 std::size_t leak_checker::count = 0;
 
-TEST_CASE("Circular buffer test" "[circular_buffer]")
+TEST_CASE("Pushing and popping (allocating and deallocating)", "[circular_buffer]")
 {
 	leak_checker::count = 0;
 	SECTION("Construct with capacity") {
@@ -43,6 +43,7 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
 		REQUIRE(cb.front().value() == 1);
+		REQUIRE(cb.back().value() == 1);
 		REQUIRE(leak_checker::count == 1);
 
 		cb.push_back(2);
@@ -50,6 +51,7 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
 		REQUIRE(cb.front().value() == 1);
+		REQUIRE(cb.back().value() == 2);
 		REQUIRE(leak_checker::count == 2);
 
 		cb.push_back(3);
@@ -59,6 +61,7 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
 		REQUIRE(cb.front().value() == 1);
+		REQUIRE(cb.back().value() == 5);
 		REQUIRE(leak_checker::count == 5);
 
 		cb.push_back(6);
@@ -66,6 +69,7 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
 		REQUIRE(cb.front().value() == 2);
+		REQUIRE(cb.back().value() == 6);
 		REQUIRE(leak_checker::count == 5);
 
 		cb.pop_front();
@@ -73,21 +77,25 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
 		REQUIRE(cb.front().value() == 3);
+		REQUIRE(cb.back().value() == 6);
 		REQUIRE(leak_checker::count == 4);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 3);
 		REQUIRE(cb.front().value() == 4);
+		REQUIRE(cb.back().value() == 6);
 		REQUIRE(leak_checker::count == 3);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 2);
 		REQUIRE(cb.front().value() == 5);
+		REQUIRE(cb.back().value() == 6);
 		REQUIRE(leak_checker::count == 2);
 
 		cb.pop_front();
 		REQUIRE(cb.size() == 1);
 		REQUIRE(cb.front().value() == 6);
+		REQUIRE(cb.back().value() == 6);
 		REQUIRE(leak_checker::count == 1);
 
 		cb.pop_front();
@@ -101,6 +109,7 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
 		REQUIRE(cb.front().value() == 7);
+		REQUIRE(cb.back().value() == 7);
 		REQUIRE(leak_checker::count == 1);
 
 		cb.push_back(8);
@@ -109,6 +118,7 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(cb.capacity() == 5);
 		REQUIRE(!cb.empty());
 		REQUIRE(cb.front().value() == 7);
+		REQUIRE(cb.back().value() == 9);
 		REQUIRE(leak_checker::count == 3);
 
 		cb.clear();
@@ -122,5 +132,84 @@ TEST_CASE("Circular buffer test" "[circular_buffer]")
 		REQUIRE(leak_checker::count == 0);
 		circular_buffer<leak_checker> cb(5);
 		REQUIRE(leak_checker::count == 0);
+	}
+}
+
+TEST_CASE("Indexing", "[circular_buffer]") {
+	auto cb = circular_buffer<int>(5);
+
+	for (int i = 0; i < 10; ++i) {
+		REQUIRE(cb.empty());
+
+		//const auto &const_cb = cb;
+		const circular_buffer<int> &const_cb(cb);
+		REQUIRE_THROWS_AS(cb.at(0), std::out_of_range);
+		REQUIRE_THROWS_AS(cb.at(1), std::out_of_range);
+		REQUIRE_THROWS_AS(const_cb.at(0), std::out_of_range);
+		REQUIRE_THROWS_AS(const_cb.at(1), std::out_of_range);
+
+		REQUIRE(cb.push_back(0));
+		REQUIRE(cb.push_back(1));
+		REQUIRE(cb.push_back(2));
+		REQUIRE(cb.at(0) == 0);
+		REQUIRE(cb.at(1) == 1);
+		REQUIRE(cb.at(2) == 2);
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 1);
+		REQUIRE(cb[2] == 2);
+		REQUIRE(const_cb.at(0) == 0);
+		REQUIRE(const_cb.at(1) == 1);
+		REQUIRE(const_cb.at(2) == 2);
+		REQUIRE(const_cb[0] == 0);
+		REQUIRE(const_cb[1] == 1);
+		REQUIRE(const_cb[2] == 2);
+
+		REQUIRE(cb.front() == 0);
+		cb[0] = 3;
+		REQUIRE(cb.front() == 3);
+		REQUIRE(cb.at(0) == 3);
+		REQUIRE(cb.at(1) == 1);
+		REQUIRE(cb.at(2) == 2);
+		REQUIRE(cb[0] == 3);
+		REQUIRE(cb[1] == 1);
+		REQUIRE(cb[2] == 2);
+		REQUIRE(const_cb.at(0) == 3);
+		REQUIRE(const_cb.at(1) == 1);
+		REQUIRE(const_cb.at(2) == 2);
+		REQUIRE(const_cb[0] == 3);
+		REQUIRE(const_cb[1] == 1);
+		REQUIRE(const_cb[2] == 2);
+
+		cb[1] = 4;
+		REQUIRE(cb.at(0) == 3);
+		REQUIRE(cb.at(1) == 4);
+		REQUIRE(cb.at(2) == 2);
+		REQUIRE(cb[0] == 3);
+		REQUIRE(cb[1] == 4);
+		REQUIRE(cb[2] == 2);
+		REQUIRE(const_cb.at(0) == 3);
+		REQUIRE(const_cb.at(1) == 4);
+		REQUIRE(const_cb.at(2) == 2);
+		REQUIRE(const_cb[0] == 3);
+		REQUIRE(const_cb[1] == 4);
+		REQUIRE(const_cb[2] == 2);
+
+		cb.pop_front();
+		REQUIRE(cb.at(0) == 4);
+		REQUIRE(cb.at(1) == 2);
+		REQUIRE(cb[0] == 4);
+		REQUIRE(cb[1] == 2);
+		REQUIRE(const_cb.at(0) == 4);
+		REQUIRE(const_cb.at(1) == 2);
+		REQUIRE(const_cb[0] == 4);
+		REQUIRE(const_cb[1] == 2);
+
+		cb.pop_front();
+		REQUIRE(cb.at(0) == 2);
+		REQUIRE(cb[0] == 2);
+		REQUIRE(const_cb.at(0) == 2);
+		REQUIRE(const_cb[0] == 2);
+
+		cb.pop_front();
 	}
 }
