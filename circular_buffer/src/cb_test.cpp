@@ -1,12 +1,17 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
-#include <iostream>
+#include <limits>
 
 #include "circular_buffer.h"
 
 TEST_CASE("Constructor test" "[circular_buffer]")
 {
-	circular_buffer<int> cb(20);
-	REQUIRE(cb.capacity() == 20);
+	SECTION("Construct with capacity") {
+		auto cb = circular_buffer<int>(20);
+		REQUIRE(cb.size() == 0);
+		REQUIRE(cb.capacity() == 20);
+		REQUIRE(cb.empty());
+		REQUIRE(cb.max_size() > 0);
+	}
 }
