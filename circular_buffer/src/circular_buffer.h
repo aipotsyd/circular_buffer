@@ -2,6 +2,7 @@
 //
 // Based off Pete Goodlife's articles from ~2008
 // 
+
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
@@ -27,7 +28,7 @@ public:
 	explicit circular_buffer(std::size_t capacity, const allocator_type& allocator = allocator_type())
 		: m_capacity{ capacity },
 		m_allocator{allocator},
-		m_buffer{ m_allocator.allocate(capacity)},
+		m_buffer(m_allocator.allocate(capacity)),
 		m_front{ nullptr },
 		m_back{ m_buffer }
 	{}
@@ -46,12 +47,12 @@ public:
 
 	iterator begin()
 	{
-		return iterator(*this, 0, size());
+		return iterator(this, 0, size());
 	}
 
 	iterator end()
 	{
-		return iterator(*this, size(), size());
+		return iterator(this, size(), size());
 	}
 
 	reverse_iterator rbegin()
@@ -213,7 +214,7 @@ public:
 	using reference = typename parent_type::reference;
 	using iterator_category = typename std::random_access_iterator_tag;
 
-	iterator(parent_type &parent, size_type index, size_type wrap)
+	iterator(parent_type* parent, size_type index, size_type wrap)
 		: parent(parent), index_(index), wrap(wrap) {}
 
 	iterator(const iterator&) = default;
@@ -225,8 +226,8 @@ public:
 	self_type& operator++()
 	{
 		++index_;
-		if (index_ == wrap)
-			index_ = 0;
+		//if (index_ == wrap)
+		//	index_ = 0;
 		return *this;
 	}
 
@@ -239,8 +240,8 @@ public:
 
 	self_type& operator--()
 	{
-		if (index_ = 0)
-			index_ = wrap;
+		//if (index_ = 0)
+		//	index_ = wrap;
 		--index_;
 		return *this;
 	}
@@ -254,7 +255,8 @@ public:
 
 	self_type& operator+=(difference_type delta)
 	{
-		index_ = normalize(index_ + delta);
+		//index_ = normalize(index_ + delta);
+		index_ += delta;
 		return *this;
 	}
 
@@ -267,9 +269,10 @@ public:
 
 	self_type& operator-=(difference_type delta)
 	{
-		if (delta > wrap)
-			delta %= wrap;
-		index_ = normalize(index_ + wrap - delta);
+		//if (delta > wrap)
+		//	delta %= wrap;
+		//index_ = normalize(index_ + wrap - delta);
+		index_ -= delta;
 		return *this;
 	}
 
@@ -286,12 +289,12 @@ public:
 	}
 
 	
-	reference operator*() { return parent[index_]; }
-	pointer operator->() { return &(parent[index_]); }
+	reference operator*() { return (*parent)[index_]; }
+	pointer operator->() { return &(operator*()); }
 
 	bool operator==(const self_type &other) const
 	{
-		return &parent == &other.parent && index_ == other.index_ && wrap == other.wrap;
+		return parent == other.parent && index_ == other.index_ && wrap == other.wrap;
 	}
 
 	bool operator!=(const self_type &other) const
@@ -325,23 +328,23 @@ private:
 		return index % wrap;
 	}
 
-	parent_type& parent;
+	parent_type* parent;
 	size_type index_;
 	size_type wrap;
 };
 
-template <typename circular_buffer_iterator_t>
-circular_buffer_iterator_t operator+
-(const typename circular_buffer_iterator_t::difference_type &a,
-	const circular_buffer_iterator_t                           &b)
-{
-	return circular_buffer_iterator_t(a) + b;
-}
-
-template <typename circular_buffer_iterator_t>
-circular_buffer_iterator_t operator-
-(const typename circular_buffer_iterator_t::difference_type &a,
-	const circular_buffer_iterator_t                           &b)
-{
-	return circular_buffer_iterator_t(a) - b;
-}
+//template <typename circular_buffer_iterator_t>
+//circular_buffer_iterator_t operator+
+//(const typename circular_buffer_iterator_t::difference_type &a,
+//	const circular_buffer_iterator_t                           &b)
+//{
+//	return circular_buffer_iterator_t(nullptr, a) + b;
+//}
+//
+//template <typename circular_buffer_iterator_t>
+//circular_buffer_iterator_t operator-
+//(const typename circular_buffer_iterator_t::difference_type &a,
+//	const circular_buffer_iterator_t                           &b)
+//{
+//	return circular_buffer_iterator_t(a) - b;
+//}

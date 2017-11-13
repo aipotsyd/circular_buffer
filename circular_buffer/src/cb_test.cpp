@@ -276,7 +276,7 @@ TEST_CASE("Using Iterators", "[circular_buffer]") {
 	}
 
 	SECTION("Copy with iterators") {
-		auto dest = circular_buffer<int>(3);
+		auto dest = circular_buffer<int>(5);
 		std::copy(cb.begin(), cb.end(), dest.begin());
 		REQUIRE(cb[0] == 0);
 		REQUIRE(cb[1] == 1);
@@ -287,7 +287,7 @@ TEST_CASE("Using Iterators", "[circular_buffer]") {
 	}
 
 	SECTION("Copy with reverse iterators") {
-		auto dest = circular_buffer<int>(3);
+		auto dest = circular_buffer<int>(5);
 		std::copy(cb.rbegin(), cb.rend(), dest.begin());
 		REQUIRE(cb[0] == 0);
 		REQUIRE(cb[1] == 1);
