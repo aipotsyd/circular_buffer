@@ -288,8 +288,8 @@ public:
 		return index_ - c.index_;
 	}
 
-	
 	reference operator*() { return (*parent)[index_]; }
+
 	pointer operator->() { return &(operator*()); }
 
 	bool operator==(const self_type &other) const
