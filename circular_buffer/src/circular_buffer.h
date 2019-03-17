@@ -2,6 +2,7 @@
 //
 // Based off Pete Goodlife's articles from ~2008
 // 
+
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
@@ -19,13 +20,15 @@ public:
 	using const_reference = typename allocator_type::const_reference;
 	using pointer = typename allocator_type::pointer;
 	using const_pointer = typename allocator_type::const_pointer;
-
 	using class_type = circular_buffer;
+
+	class iterator;
+	using reverse_iterator = std::reverse_iterator<iterator>;
 
 	explicit circular_buffer(std::size_t capacity, const allocator_type& allocator = allocator_type())
 		: m_capacity{ capacity },
 		m_allocator{allocator},
-		m_buffer{ m_allocator.allocate(capacity)},
+		m_buffer(m_allocator.allocate(capacity)),
 		m_front{ nullptr },
 		m_back{ m_buffer }
 	{}
@@ -41,6 +44,26 @@ public:
 	class_type& operator=(const class_type &) = default;
 	class_type& operator=(class_type &&) = default;
 	allocator_type get_allocator() const { return m_allocator; }
+
+	iterator begin()
+	{
+		return iterator(this, 0, size());
+	}
+
+	iterator end()
+	{
+		return iterator(this, size(), size());
+	}
+
+	reverse_iterator rbegin()
+	{
+		return reverse_iterator(end());
+	}
+
+	reverse_iterator rend()
+	{
+		return reverse_iterator(begin());
+	}
 
 	size_type size() const
 	{
@@ -179,3 +202,149 @@ private:
 	pointer m_front;
 	pointer m_back;
 };
+
+template<typename T, typename A>
+class circular_buffer<T, A>::iterator {
+public:
+	using parent_type = circular_buffer<T>;
+	using self_type = typename parent_type::iterator;
+	using difference_type = typename parent_type::difference_type;
+	using value_type = typename parent_type::value_type;
+	using pointer = typename parent_type::pointer;
+	using reference = typename parent_type::reference;
+	using iterator_category = typename std::random_access_iterator_tag;
+
+	iterator(parent_type* parent, size_type index, size_type wrap)
+		: parent(parent), index_(index), wrap(wrap) {}
+
+	iterator(const iterator&) = default;
+	iterator(iterator&&) = default;
+	iterator& operator=(const iterator&) = default;
+	iterator& operator=(iterator&&) = default;
+	~iterator() {}
+
+	self_type& operator++()
+	{
+		++index_;
+		//if (index_ == wrap)
+		//	index_ = 0;
+		return *this;
+	}
+
+	self_type operator++(int)
+	{
+		self_type old{ *this };
+		operator++();
+		return old;
+	}
+
+	self_type& operator--()
+	{
+		//if (index_ = 0)
+		//	index_ = wrap;
+		--index_;
+		return *this;
+	}
+
+	self_type operator--(int)
+	{
+		self_type old{ *this };
+		operator--();
+		return old;
+	}
+
+	self_type& operator+=(difference_type delta)
+	{
+		//index_ = normalize(index_ + delta);
+		index_ += delta;
+		return *this;
+	}
+
+	self_type operator+(difference_type delta) const
+	{
+		self_type tmp{ *this };
+		tmp += delta;
+		return tmp;
+	}
+
+	self_type& operator-=(difference_type delta)
+	{
+		//if (delta > wrap)
+		//	delta %= wrap;
+		//index_ = normalize(index_ + wrap - delta);
+		index_ -= delta;
+		return *this;
+	}
+
+	self_type operator-(difference_type delta) const
+	{
+		self_type tmp{ *this };
+		tmp -= delta;
+		return tmp;
+	}
+
+	difference_type operator-(const self_type &c) const
+	{
+		return index_ - c.index_;
+	}
+
+	reference operator*() { return (*parent)[index_]; }
+
+	pointer operator->() { return &(operator*()); }
+
+	bool operator==(const self_type &other) const
+	{
+		return parent == other.parent && index_ == other.index_ && wrap == other.wrap;
+	}
+
+	bool operator!=(const self_type &other) const
+	{
+		return !(other == *this);
+	}
+
+	bool operator>(const self_type &other) const
+	{
+		return index_ > other.index_;
+	}
+
+	bool operator>=(const self_type &other) const
+	{
+		return index_ >= other.index_;
+	}
+
+	bool operator<(const self_type &other) const
+	{
+		return index_ < other.index_;
+	}
+
+	bool operator<=(const self_type &other) const
+	{
+		return index_ <= other.index_;
+	}
+
+private:
+	size_type normalize(size_type index) const
+	{
+		return index % wrap;
+	}
+
+	parent_type* parent;
+	size_type index_;
+	size_type wrap;
+};
+
+//template <typename circular_buffer_iterator_t>
+//circular_buffer_iterator_t operator+
+//(const typename circular_buffer_iterator_t::difference_type &a,
+//	const circular_buffer_iterator_t                           &b)
+//{
+//	return circular_buffer_iterator_t(nullptr, a) + b;
+//}
+//
+//template <typename circular_buffer_iterator_t>
+//circular_buffer_iterator_t operator-
+//(const typename circular_buffer_iterator_t::difference_type &a,
+//	const circular_buffer_iterator_t                           &b)
+//{
+//	return circular_buffer_iterator_t(a) - b;
+//}

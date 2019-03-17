@@ -213,3 +213,89 @@ TEST_CASE("Indexing", "[circular_buffer]") {
 		cb.pop_front();
 	}
 }
+
+TEST_CASE("Using Iterators", "[circular_buffer]") {
+	auto cb = circular_buffer<int>(5);
+
+	cb.push_back(0);
+	cb.push_back(1);
+	cb.push_back(2);
+
+	REQUIRE(cb[0] == 0);
+	REQUIRE(cb[1] == 1);
+	REQUIRE(cb[2] == 2);
+
+	SECTION("Range-based for loop") {
+		for (auto& i : cb)
+		{
+			i *= 10;
+		}
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 10);
+		REQUIRE(cb[2] == 20);
+	}
+
+	SECTION("Raw for loop with iterators (pre-increment") {
+		for (auto i = cb.begin(); i != cb.end(); ++i)
+		{
+			*i *= 10;
+		}
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 10);
+		REQUIRE(cb[2] == 20);
+	}
+
+	SECTION("Raw for loop with iterators (post-increment") {
+		for (auto i = cb.begin(); i != cb.end(); i++)
+		{
+			*i *= 10;
+		}
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 10);
+		REQUIRE(cb[2] == 20);
+	}
+
+	SECTION("Raw for loop with reverse iterators (pre-increment") {
+		for (auto i = cb.rbegin(); i != cb.rend(); ++i)
+		{
+			*i *= 10;
+		}
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 10);
+		REQUIRE(cb[2] == 20);
+	}
+
+	SECTION("Raw for loop with reverse iterators (post-increment") {
+		for (auto i = cb.rbegin(); i != cb.rend(); i++)
+		{
+			*i *= 10;
+		}
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 10);
+		REQUIRE(cb[2] == 20);
+	}
+
+	SECTION("Copy with iterators") {
+		auto dest = circular_buffer<int>(5);
+		dest.push_back(1);
+		std::copy(cb.begin(), cb.end(), dest.begin());
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 1);
+		REQUIRE(cb[2] == 2);
+		REQUIRE(dest[0] == 0);
+		REQUIRE(dest[1] == 1);
+		REQUIRE(dest[2] == 2);
+	}
+
+	SECTION("Copy with reverse iterators") {
+		auto dest = circular_buffer<int>(5);
+		dest.push_back(1);
+		std::copy(cb.rbegin(), cb.rend(), dest.begin());
+		REQUIRE(cb[0] == 0);
+		REQUIRE(cb[1] == 1);
+		REQUIRE(cb[2] == 2);
+		REQUIRE(dest[0] == 2);
+		REQUIRE(dest[1] == 1);
+		REQUIRE(dest[2] == 0);
+	}
+}
